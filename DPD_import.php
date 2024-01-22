@@ -1,4 +1,6 @@
 <?php
+$startTime = microtime(true);
+$RowInsert=0;
 // alls ftp DPD id from 3 to 8
 for ($i = 3; $i < 9 ; $i++) 
 {
@@ -64,18 +66,18 @@ for ($i = 3; $i < 9 ; $i++)
             $lines = explode("\n", $txt);
 
             for ($j = 2; $j < count($lines); $j++) 
-                {
+                { 
                 $line = $lines[$j];
                 $values = explode(';', $line); 
                 $PARCELNO = trim($values[0]);
-                if($PARCELNO !== "") 
+                if($PARCELNO !== "" and strlen($PARCELNO) == 14 )
                     {
-                    $SCAN_CODE = trim($values[1]);
+                    $SCAN_CODE =substr(trim($values[1]),0,5);
                     $DT = date("Y-m-d H:i:s", strtotime(substr($values[4], 0, 4) . '-' . substr($values[4], 4, 2) . '-' . substr($values[4], 6, 2) . ' ' . substr($values[4], 8, 2) . ':' . substr($values[4], 10, 2) . ':' . substr($values[4], 12, 2)));
-                    $Service = trim($values[8]);
-                    $ZIP = trim($values[10]);
-                    $Reference = trim($values[15]);
-                    $Customer = trim($values[17]);
+                    $Service = substr(trim($values[8]),0,5);
+                    $ZIP = substr(trim($values[10]),0,8);
+                    $Reference = substr(trim($values[15]),0,15);
+                    $Customer = substr(trim($values[17]),0,200);
                     $Source =  $Job_name;
                     $KN = 'Import';
 
@@ -83,8 +85,8 @@ for ($i = 3; $i < 9 ; $i++)
                         {
                         $Field = array('t','R','v','z');
                         if (in_array(substr(trim($Reference), 0, 1),$Field))
-                            {$Reference= substr(trim($Reference), 1, 8);}
-                        elseif(strlen($Reference)== 8)
+                            {$Reference= substr(trim($Reference), 1, 10);}
+                        elseif(strlen($Reference)== 10)
                             {
                             $Reference = $Reference;
                             }
@@ -96,6 +98,7 @@ for ($i = 3; $i < 9 ; $i++)
                         if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");} 
                         $data = array('PARCELNO' => $PARCELNO, 'SCAN_CODE' => $SCAN_CODE,'EVENT_DATE_TIME' => $DT,'Service' => $Service,'ZIP' => $ZIP ,'Reference' => $Reference, 'Customer' => $Customer, 'Source' => $Source, 'KN' => $KN);
                         $Connection->insert("PMIdb", $data);
+                        $RowInsert++;
                         }
                     if (!is_dir($AftImportPath)) 
                         {
@@ -110,6 +113,13 @@ for ($i = 3; $i < 9 ; $i++)
             }
         }
     }
-    $SQL = "WITH CTE AS (SELECT [ID],[PARCELNO],[SCAN_CODE],[EVENT_DATE_TIME],[SERVICE],[ZIP],[REFERENCE],[KN],ROW_NUMBER() OVER (PARTITION BY [PARCELNO],[SCAN_CODE],[EVENT_DATE_TIME],[SERVICE],[REFERENCE] ORDER BY [KN] DESC, [EVENT_DATE_TIME] ASC, ID ASC) row_num FROM dbo.PMIdB) DELETE FROM CTE WHERE row_num > 1 and KN <> 'Inbound'";
-    $stmt = $Connection->execute($SQL);
-    ?>
+
+    if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");} 
+    $SQL = "WITH CTE AS (SELECT [ID],[PARCELNO],[SCAN_CODE],[EVENT_DATE_TIME],[SERVICE],[ZIP],[REFERENCE],[KN],ROW_NUMBER() OVER (PARTITION BY [PARCELNO],[SCAN_CODE],[EVENT_DATE_TIME],[SERVICE],[REFERENCE] ORDER BY [KN] DESC, [EVENT_DATE_TIME] ASC, ID ASC) row_num FROM dbo.PMIdB) delete FROM CTE WHERE row_num > 1 and KN <> 'Inbound'";
+    $Connection->execute($SQL);
+
+$endTime = microtime(true);
+$executionTime = $endTime - $startTime;
+echo "Insert records: ".$RowInsert."<br>";
+echo "Script time: ".$executionTime."sec <br>";
+?>

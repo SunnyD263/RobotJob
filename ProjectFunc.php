@@ -9,7 +9,7 @@ $Export_way, $Export_file, $Export_FTP, $Export_path, $Email, $Email_To, $Email_
 {
 
 //import file
-$DestinationPath = "\\\\10.47.17.20\\pmi-dbo\\SQL_script\\Robotjob\\".$Job_name."\\";
+ $DestinationPath = "\\\\10.47.17.20\\pmi-dbo\\SQL_script\\Robotjob\\".$Job_name."\\";
 switch ($Import_way) 
     {
     case "Nothing":
@@ -48,7 +48,8 @@ switch ($Export_way)
             {
             $stmt =Exp_SQL_commands($Job_name);
             //file with time or not (test_2023_10_11.xlsx)
-            if ($stmt[0]["count"] !== 0)
+            $Counter = $stmt[0]["count"];
+            if ($Counter !== 0)
                 {
                 if($stmt[1] !== "") 
                 {   
@@ -90,8 +91,7 @@ switch ($Export_way)
             }
         break;
     case "FTP":
-        $stmt =Exp_SQL_commands($Job_name);
-    if ($stmt["count"] !== 0)
+    if ($Counter !== 0)
         {
         $Now = date("dmY_His");
         $Export_file = $Export_file . $Now . '.xlsx';
@@ -106,16 +106,19 @@ switch ($Export_way)
         }
         break;
     }
-
-//emails sender
-if ($Email == 1)
-{
-if($Export_path !== '' and $Export_file !== '')
-{
-$Email_Attach  = $Export_path.$Export_file;
-}
-Send_email(1, $Email_To, $Email_Cc, $Email_Subject, $Email_Body, $Email_Attach);
-}
+ if(!isset($Counter)){$Counter = 1;}
+if ($Counter !== 0)
+    {
+    //emails sender
+    if ($Email == 1)
+        {
+        if($Export_path !== '' and $Export_file !== '')
+            {
+            $Email_Attach  = $Export_path.$Export_file;
+            }
+        Send_email(1, $Email_To, $Email_Cc, $Email_Subject, $Email_Body, $Email_Attach);
+        }
+    }
 
 //next round time set
 Next_round($ID,$Start_job,$Frequency,$Frequency_value);
@@ -187,16 +190,22 @@ switch ($Frequency)
     case "Month":
         $array = explode(",", $Frequency_value);
         $Now= date("Y-m-d H:i:s");
-        $Start_month = date("M", strtotime($Start_job));
-        $Now_month = date("M");
+        $Now_month = date("M", strtotime($Start_job));
+        $Job = new DateTime($Start_job);
+        $Job->add(new DateInterval('P1M'));
+        $Start_month= $Job->format('M');
+        $Start_job = $Job->format('Y-m-d H:i:s');
         $Check = in_array($Start_month, $array);
-        while ($Start_month !== $Now_month or $Check == false) 
+        if($Start_month !== $Now_month and $Check == false)
             {
-            $Start_job = new DateTime($Start_job);
-            $Start_job->add(new DateInterval('P1M'));
-            $Start_month = $Start_job->format('M');
-            $Start_job = $Start_job->format('Y-m-d H:i:s');
-            $Check = in_array($Start_month, $array);
+            while ($Check == false) 
+                {
+                $Job = new DateTime($Start_job);
+                $Job->add(new DateInterval('P1M'));
+                $Start_month = $Job->format('M');
+                $Start_job = $Job->format('Y-m-d H:i:s');
+                $Check = in_array($Start_month, $array);
+                }
             }
         $SQL = "UPDATE [dbo].[RobotJob_overview] SET [Start_job]= :Start_job, [Last_run] = :Now WHERE [ID] = :ID";
         $params = array('Start_job'=> $Start_job, 'Now' => $Now, 'ID' =>  $ID); 

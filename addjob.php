@@ -92,7 +92,7 @@ echo    "<div id='Interval_Slct' style='display: none'>";
 echo    "<label for='repeat' >Every:</label>";
 echo    "<input type='text' id='repeat' name='repeat' value=''>";       
 echo    "</div>";
-
+//htmlforms.php 
 DayOfWeek_combobox();
 MonthOfYear_combobox();
 echo    "</fieldset>";
@@ -106,6 +106,7 @@ echo    "<option id='FTP' value='FTP'  >FTP</option>";
 echo    "<option id='Path' value='Path' >Path</option>";
 echo    "<option id='PHP' value='PHP' >PHP</option>";
 echo    "</select>";
+//htmlforms.php 
 FTP_combobox(1);
 echo    "<div id='Path_Imp_Slct' class='Email' style='display: none'>";
 echo    "<label for='Path_imp' >Import path:</label>";
@@ -127,6 +128,7 @@ echo    "<option id='FTP' value='FTP'  >FTP</option>";
 echo    "<option id='Path' value='Path' >Path</option>";
 echo    "<option id='PHP' value='PHP' >PHP</option>";
 echo    "</select>";
+//htmlforms.php 
 FTP_combobox(2);
 echo    "<div id='Path_Exp_Slct' class='Email' style='display: none'>";
 echo    "<label for='Path_exp' >Export path:</label>";

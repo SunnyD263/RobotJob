@@ -22,6 +22,7 @@
         </header>   
 
 <?php
+set_time_limit(3600);
 session_start();
 require "projectfunc.php";
 if (!isset($_SESSION['currentDir'])){Find_Dir();} 
@@ -58,9 +59,41 @@ If ($_SERVER["REQUEST_METHOD"] == "GET")
 
  
 }
-
-
 if (!isset($Connection)){$Connection = new PDOConnect("Setup");} 
+$Now= date("Y-m-d H:i:s");
+$SQL=  "SELECT TOP 1 * FROM [Setup].[dbo].[RobotJob_View] WHERE [Start_job] < :Start_job and [Active_job] = 1 ORDER BY 'Start_job' ASC";
+$params = array('Start_job'=> $Now);
+$stmt = $Connection->select($SQL,$params);
+$count = $stmt['count'];
+if($count !== 0)
+{
+$rows = $stmt['rows']; 
+if ($rows[0]["Cycles"] < 3)
+    {        
+    $SQL = "UPDATE [dbo].[RobotJob_overview] SET [Cycles]= :Cycles WHERE [ID] = :ID";
+    $params = array('Cycles' => $rows[0]["Cycles"] + 1,'ID' =>  $rows[0]["ID"]); 
+    $Connection->update($SQL, $params);
+    echo "Start job: " . $rows[0]["Job_name"] . " at " . date("Y-m-d H:i:s");
+    echo "<br>";
+    Do_job($rows[0]["ID"],$rows[0]["Job_name"],$rows[0]["Start_job"],$rows[0]["Frequency"],$rows[0]["Frequency_value"],$rows[0]["Import_way"],$rows[0]["Import_file"], 
+    $rows[0]["Imp_FTP_ID"],$rows[0]["Import_path"], $rows[0]["Export_way"],$rows[0]["Export_file"],$rows[0]["Exp_FTP_ID"],$rows[0]["Export_path"],$rows[0]["Email"],
+    $rows[0]["Email_To"],$rows[0]["Email_Cc"], $rows[0]["Email_Subject"],$rows[0]["Email_Body"],$rows[0]["Email_Attach"]);
+
+    $SQL = "UPDATE [dbo].[RobotJob_overview] SET [Cycles]= :Cycles WHERE [ID] = :ID";
+    $params = array('Cycles' => 0 ,'ID' =>  $rows[0]["ID"]); 
+    $Connection->update($SQL, $params);
+
+    }
+else 
+    {
+        $SQL = "UPDATE [dbo].[RobotJob_overview] SET [Cycles]= :Cycles, [Active_job] = 'False' WHERE [ID] = :ID";
+        $params = array('Cycles' => 0,'ID' =>  $rows[0]["ID"]); 
+        $Connection->update($SQL, $params);
+        Send_email(1, '', '', $rows[0]["Job_name"] . ' disabled after 3 attempts','','');
+    }
+}
+
+
 $SQL=  "SELECT * FROM [Setup].[dbo].[RobotJob_View]  ORDER BY 'Active_job' desc, 'Start_job'";
 $stmt = $Connection->select($SQL);
 $count = $stmt['count'];
@@ -84,7 +117,7 @@ $rows = $stmt['rows'];
             {
             $LocButtonID = $value;
             }
-            elseif($key=='Imp_FTP_ID' or $key=='Exp_FTP_ID')
+            elseif($key=='Imp_FTP_ID' or $key=='Exp_FTP_ID' or $key=='Cycles')
             {
             }
             elseif ($key == "Active_job")
@@ -113,21 +146,7 @@ $rows = $stmt['rows'];
 }
 echo "</table>";
 echo "<br>";
-$Now= date("Y-m-d H:i:s");
-$SQL=  "SELECT TOP 1 * FROM [Setup].[dbo].[RobotJob_View] WHERE [Start_job] < :Start_job and [Active_job] = 1 ORDER BY 'Start_job' ASC";
-$params = array('Start_job'=> $Now);
-$stmt = $Connection->select($SQL,$params);
-$count = $stmt['count'];
-if($count !== 0)
-{
-$rows = $stmt['rows']; 
-Do_job($rows[0]["ID"],$rows[0]["Job_name"],$rows[0]["Start_job"],$rows[0]["Frequency"],$rows[0]["Frequency_value"],$rows[0]["Import_way"],$rows[0]["Import_file"], 
-$rows[0]["Imp_FTP_ID"],$rows[0]["Import_path"], $rows[0]["Export_way"],$rows[0]["Export_file"],$rows[0]["Exp_FTP_ID"],$rows[0]["Export_path"],$rows[0]["Email"],
-$rows[0]["Email_To"],$rows[0]["Email_Cc"], $rows[0]["Email_Subject"],$rows[0]["Email_Body"],$rows[0]["Email_Attach"]);
-}
 ?>
-
-
 </body>
 
 

@@ -66,7 +66,6 @@ if($count > 0)
         }
     }
 echo    "</select>";
-echo    "</div>";
-                
+echo    "</div>";                
 }
 ?>

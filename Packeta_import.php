@@ -1,5 +1,5 @@
 <?php
-set_time_limit(3600);
+set_time_limit(7200);
 $startTime = microtime(true);
 $txt = file_get_contents('http://localhost/proxy.txt');
 $items = explode(';', $txt);
@@ -68,7 +68,10 @@ try
                                 $SQL=  "SELECT [ZIP] FROM [DPD_DB].[dbo].[PCKBranch] where ([ID] = :ID)";
                                 $params = array(':ID' => $Branch);
                                 $zipResult = $Connection->select($SQL,$params);
+                                if ($zipResult["count"] !== 0)
+                                {
                                 $ZIP =trim($zipResult["rows"][0]["ZIP"]);   
+                                }
                             }
                             //insert rows to DB
                             $data = array('PARCELNO' => $parcelNum, 'SCAN_CODE' => $ScanCode, 'EVENT_DATE_TIME' => $DateTime, 'ZIP' => $ZIP,'Source' => "Packeta", 'KN' => 'Import', 'Customer' => $Branch);

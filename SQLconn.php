@@ -15,21 +15,34 @@ class PDOConnect
 
     public function __construct($Db)    
     {
-        try {
-            set_time_limit(3600);
-            $SQLtxt = file_get_contents('http://localhost/sqldb.txt');
-            $items = explode(';', $SQLtxt);
-            $this->ServerName = $items[0];
-            $this->UID = $items[2];
-            $this->PWD = base64_decode($items[3]);
-            $this->Db = $Db;
-            $this->conn = new PDO("sqlsrv:Server=$this->ServerName;Database=$this->Db", $this->UID, $this->PWD);
-            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        } catch(PDOException $e) {
-            echo "Connection failed: " . $e->getMessage();
+        $maxAttempts = 3; // Test cycles
+        $retryDelay = 5; // Waiting time 
+    
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            try {
+                set_time_limit(3600);
+                $SQLtxt = file_get_contents('http://localhost/sqldb.txt');
+                $items = explode(';', $SQLtxt);
+                $this->ServerName = $items[0];
+                $this->UID = $items[2];
+                $this->PWD = base64_decode($items[3]);
+                $this->Db = $Db;
+                $this->conn = new PDO("sqlsrv:Server=$this->ServerName;Database=$this->Db", $this->UID, $this->PWD);
+                $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+                break;
+            } catch (PDOException $e) {
+
+                if ($attempt < $maxAttempts) {sleep($retryDelay);} 
+                else{   if ($attempt < $maxAttempts) {sleep($retryDelay * 12) ;}
+                        else{   if ($attempt < $maxAttempts) {sleep($retryDelay * 720);}
+                                else{   echo "Connection failed after $maxAttempts attempts: " . $e->getMessage();}}
+
+                }
+            }
         }
     }
-
+    
     public static function getInstance($Db)
     {
         if (!self::$instance) {
@@ -37,52 +50,41 @@ class PDOConnect
         }
         return self::$instance;
     }
-
     public function select($query, $params = array()) 
     {
+
+        $maxAttempts = 3; // Test cycles
+        $retryDelay = 5; // Waiting time 
+    
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
         try {
-            $stmt = $this->conn->prepare($query);
-            $stmt->execute($params);
-            $stmt= array(
-                'rows'  => $stmt->fetchAll(PDO::FETCH_ASSOC),
-                'count' => $stmt->rowCount()
-                       );
-            return $stmt;
-        } catch(PDOException $e) {
-            echo "Error SQL Select: " . $e->getMessage();
-        }
+                $stmt = $this->conn->prepare($query);
+                $stmt->execute($params);
+                $stmt= array(
+                    'rows'  => $stmt->fetchAll(PDO::FETCH_ASSOC),
+                    'count' => $stmt->rowCount()
+                        );
+                return $stmt;
+            } 
+        catch (PDOException $e) {
+
+            if ($attempt < $maxAttempts) {sleep($retryDelay);} 
+            else{   if ($attempt < $maxAttempts) {sleep($retryDelay * 12) ;}
+                    else{   if ($attempt < $maxAttempts) {sleep($retryDelay * 720);}
+                            else{   echo "Connection failed after $maxAttempts attempts: " . $e->getMessage();}}
+
+            }
+            }
 
     }
-
-    public function selectToExcel($query, $params = array()) 
-    {
-        try {
-            $stmt = $this->conn->prepare($query);
-            $stmt->execute($params);
-    
-            $columnNames = array();
-            for ($i = 0; $i < $stmt->columnCount(); $i++) {
-                $col = $stmt->getColumnMeta($i);
-                $columnNames[] = $col['name'];
-            }
-    
-            $data = array();
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                $record = array();
-                foreach ($columnNames as $colName) {
-                    $record[$colName] = $row[$colName];
-                }
-                $data[] = $record;
-            }
-    
-            return $data;
-        } catch(PDOException $e) {
-            echo "Error SQL Select: " . $e->getMessage();
-        }
     }
 
     public function insert($table, $data) 
     {
+        $maxAttempts = 3; // Test cycles
+        $retryDelay = 5; // Waiting time 
+    
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
         try {
             $columns = implode(',', array_keys($data));
             $values = ':' . implode(',:', array_keys($data));      
@@ -96,18 +98,17 @@ class PDOConnect
 
             $stmt->execute();        
             return $stmt->rowCount();
-        } catch (PDOException $e) {
-            $errorCode = $e->getCode();
+        } 
+            catch (PDOException $e) {
 
-            // SQL Server deadlock error code
-            if ($errorCode == '40001') {
-                // Deadlock occurred, wait and retry
-                $retryCount++;
-                usleep(1000000); // Wait for 1 second (you can adjust this)
-            } else {
-                // Other SQL error, re-throw the exception
-                throw $e;
-            }
+                if ($attempt < $maxAttempts) {sleep($retryDelay);} 
+                else{   if ($attempt < $maxAttempts) {sleep($retryDelay * 12) ;}
+                        else{   if ($attempt < $maxAttempts) {sleep($retryDelay * 720);}
+                                else{   echo "Connection failed after $maxAttempts attempts: " . $e->getMessage();}}
+    
+                }
+                }
+    
         }
     }
     
@@ -178,7 +179,7 @@ class FTP
             $this->FTPServer = $stmt['rows'][0]['Address'];
             $this->UID = $stmt['rows'][0]['UserName'];
             $this->PWD = base64_decode($stmt['rows'][0]["Password"]);   
-            $this->remotefilepath = '/';
+            $this->remotefilepath = $stmt['rows'][0]['Path'];
             }
         } catch(Exception $e)  {
             echo "Connection failed: " . $e->getMessage();
@@ -195,7 +196,6 @@ class FTP
         curl_setopt($curl, CURLOPT_PROXY, $proxyParams['proxy']['http']);
         curl_setopt($curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
         curl_setopt($curl, CURLOPT_FTP_USE_EPSV, true);
-    
         curl_setopt($curl, CURLOPT_URL, $ftpUrl);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
     
@@ -235,7 +235,7 @@ class FTP
 
         foreach ($filteredFiles as $remoteFile) 
             {
-            if ($filename == "")
+            if ($filename == "" or $Server == '195.47.89.194')
                 {$localFile = $localFilePath . basename($remoteFile);}
             else
                 { 
@@ -341,7 +341,7 @@ class ExcelExporter {
         $this->filename = $filename;
     }
 
-    public function exportToExcel($Number='',$DT='') {
+    public function exportToExcel($Number = [], $DT = []) {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $headerRow = 1;
@@ -353,39 +353,36 @@ class ExcelExporter {
             $sheet->getColumnDimensionByColumn($column)->setAutoSize(true);    
             $column++;
         }
-
         $dataRow = 2;
         foreach ($this->data as $row) 
             {
             $column = 1;
+
             foreach ($row as $columnName => $value) 
                 {             
-
-                $Field = $Number;
-                $Field1 = $DT;
-                if(in_array($columnName,$Field))
+                if(in_array($columnName,$Number))
                     {
-                    if ($value == "")
-                        {
-                        $sheet->setCellValueExplicitByColumnAndRow($column, $dataRow, $value, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-                        }
-                    else
+                    if (is_numeric($value))
                         {
                         $sheet->setCellValueExplicitByColumnAndRow($column, $dataRow, $value, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
                         $sheet->getStyleByColumnAndRow($column, $dataRow)->getNumberFormat()->setFormatCode('0');
                         }
-                    }
-                elseif (in_array($columnName,$Field1))
-                    {
-                    if ($value == "")
+                    else
                         {
                         $sheet->setCellValueExplicitByColumnAndRow($column, $dataRow, $value, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
                         }
-                    else
+                    }
+                elseif (in_array($columnName,$DT))
+                    {
+                    if (is_numeric($value))
                         {
                         $excelTimestamp = Date::PHPToExcel(strtotime($value));
                         $sheet->setCellValueExplicitByColumnAndRow($column, $dataRow, $excelTimestamp, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
                         $sheet->getStyleByColumnAndRow($column, $dataRow)->getNumberFormat()->setFormatCode('yyyy-mm-dd hh:mm:ss');
+                        }
+                    else
+                        {
+                        $sheet->setCellValueExplicitByColumnAndRow($column, $dataRow, $value, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
                         }
 
                     }

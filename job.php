@@ -232,7 +232,7 @@ case "PD3_reference":
                     {
                     $Field = array('t','R','v','z');
                     if (in_array(substr(trim($values[0]), 0, 1),$Field))
-                    {$Reference= substr(trim($values[0]), 1, 8);}
+                    {$Reference= substr(trim($values[0]), 1, 10);}
                     else
                     {$Reference = trim($values[0]);}
                     $DT = substr(trim($values[1]), 0, 2) . substr(trim($values[1]), 3, 2) . '-' . substr(trim($values[1]), 5, 1) . substr(trim($values[1]), 7, 1) . '-' . substr(trim($values[1]), 8, 2);      
@@ -256,29 +256,29 @@ break;
 case "PMI_OrdItems_PB4_cntf":
 
     if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");} 
-
     $files = scandir($DestinationPath);  
     foreach ($files as $file) 
         {
         if (is_file($DestinationPath . $file) && $file != '.' && $file != '..') 
             {
             $Readfile = fopen($DestinationPath . $file, "r");
-            fgets($Readfile);
-            while (($line = fgets($Readfile)) !== false) 
+            fgets($Readfile);              
+                while (($line = fgets($Readfile)) !== false) 
                 {
                     $values = explode("\t", $line);
                     if ($values[0] !== '')
-                    {    
+                    {
                     $Reference=trim($values[0]);
                     $ORDTyp = trim($values[1]);
                     $Material=trim($values[2]);
                     $Quantity = trim($values[4]);
                     $Codentify =trim($values[5]);
-                     
+                  
     $data = array('Reference' => $Reference, 'ORDTyp' => $ORDTyp,'Material' => $Material,'Quantity' => $Quantity,'Codentify' => $Codentify, 'Task' => '');
     $Connection->insert("OrderItems", $data);
                     }
-                }       
+                }                   
+
                 fclose($Readfile);
                 if (!is_dir($AftImportPath)) {
                     if (!mkdir($AftImportPath, 0777, true)) {
@@ -288,18 +288,17 @@ case "PMI_OrdItems_PB4_cntf":
             rename($DestinationPath.$file, $AftImportPath.$file);
             }
         }
-    $SQL = "WITH CTE AS (SELECT [REFERENCE],[Material],[ORDTyp],[Codentify],[Quantity], ROW_NUMBER() OVER (PARTITION BY [REFERENCE],[Material],[ORDTyp],[Codentify],[Quantity] ORDER BY [REFERENCE] Desc) row_num FROM OrderItems) DELETE FROM CTE WHERE row_num > 1 and ORDTyp = 'PB4";
+    $SQL = "WITH CTE AS (SELECT [REFERENCE],[Material],[ORDTyp],[Codentify],[Quantity], ROW_NUMBER() OVER (PARTITION BY [REFERENCE],[Material],[ORDTyp],[Codentify] ORDER BY [REFERENCE] Desc) row_num FROM OrderItems) DELETE FROM CTE WHERE row_num > 1 and ORDTyp = 'PB4'";
+    $SQL1 = "WITH CTE AS (SELECT [REFERENCE],[Material],[ORDTyp],[Codentify],[Quantity], ROW_NUMBER() OVER (PARTITION BY [REFERENCE],[Material],[ORDTyp],[Codentify] ORDER BY [REFERENCE] Desc) row_num FROM OrderItems) DELETE FROM CTE WHERE row_num > 1 and left(ORDTyp,2) = 'PR'";
     $stmt = $Connection->execute($SQL);
+    $stmt = $Connection->execute($SQL1);
 break;
 
 //***************************************************************************************************//
 case "PMI_OrdItems_PD":
 
-    //set order_type PXXT by value from txt file 
-    $TRADEINlogpath = "\\\\10.47.17.20\\pmi-dbo\\SQL_script\safe\\tradein.txt";
-    $tradeINlog = file_get_contents($TRADEINlogpath);
-
     if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");} 
+
     $files = scandir($DestinationPath);  
     foreach ($files as $file) 
         {
@@ -318,15 +317,7 @@ case "PMI_OrdItems_PD":
                     $Quantity = trim($values[4]);
                     $Codentify =trim($values[5]);
                     $Task =trim($values[6]);
-                    $Code =trim($values[7]);
-            foreach (explode("\n", $tradeINlog) as $TrCode) 
-                    {
-                    if (trim($TrCode) == $Code) 
-                        {
-                            $ORDTyP = trim($values[7]) . 'T';
-                        }
-                    }
-                     
+
     $data = array('Reference' => $Reference, 'ORDTyp' => $ORDTyp,'Material' => $Material,'Quantity' => $Quantity,'Codentify' => $Codentify, 'Task' => $Task);
     $Connection->insert("OrderItems", $data);
                     }
@@ -341,7 +332,9 @@ case "PMI_OrdItems_PD":
             }
         }
     $SQL = "WITH CTE AS (SELECT [REFERENCE],[Material],[ORDTyp],[Codentify],[Quantity],[Task], ROW_NUMBER() OVER (PARTITION BY [Task],[Material],[REFERENCE],[Codentify] ORDER BY [Task] desc) row_num FROM OrderItems) delete FROM CTE WHERE row_num > 1 and left(ORDTyp,2)='PD'";
+    $SQL1 = "WITH CTE AS (SELECT [REFERENCE],[Material],[ORDTyp],[Codentify],[Quantity],[Task], ROW_NUMBER() OVER (PARTITION BY [Task],[Material],[REFERENCE],[Codentify] ORDER BY [Task] desc) row_num FROM OrderItems) delete FROM CTE WHERE row_num > 1 and left(ORDTyp,2)='PO'";    
     $stmt = $Connection->execute($SQL);
+    $stmt = $Connection->execute($SQL1);
 break;
 
 //***************************************************************************************************//
@@ -367,15 +360,7 @@ case "PMI_OrdItems_PD_cntf":
                     $Quantity = trim($values[4]);
                     $Codentify =trim($values[5]);
                     $Task =trim($values[6]);
-                    $Code =trim($values[7]);
-            foreach (explode("\n", $tradeINlog) as $TrCode) 
-                    {
-                    if (trim($TrCode) == $Code) 
-                        {
-                            $ORDTyP = trim($values[7]) . 'T';
-                        }
-                    }
-                     
+  
     $data = array('Reference' => $Reference, 'ORDTyp' => $ORDTyp,'Material' => $Material,'Quantity' => $Quantity,'Codentify' => $Codentify, 'Task' => $Task);
     $Connection->insert("OrderItems", $data);
                     }
@@ -389,8 +374,10 @@ case "PMI_OrdItems_PD_cntf":
             rename($DestinationPath.$file, $AftImportPath.$file);
             }
         }
-    $SQL = "WITH CTE AS (SELECT [REFERENCE],[Material],[ORDTyp],[Codentify],[Quantity],[Task], ROW_NUMBER() OVER (PARTITION BY [Task],[Material],[REFERENCE],[Codentify]  ORDER BY [Task] desc)  row_num FROM OrderItems) delete FROM CTE WHERE row_num > 1 and left(ORDTyp,2)='PD'";
+    $SQL = "WITH CTE AS (SELECT [REFERENCE],[Material],[ORDTyp],[Codentify],[Quantity],[Task], ROW_NUMBER() OVER (PARTITION BY [Task],[Material],[REFERENCE],[Codentify] ORDER BY [Task] desc)  row_num FROM OrderItems) delete FROM CTE WHERE row_num > 1 and left(ORDTyp,2)='PD'";
+    $SQL1 = "WITH CTE AS (SELECT [REFERENCE],[Material],[ORDTyp],[Codentify],[Quantity],[Task], ROW_NUMBER() OVER (PARTITION BY [Task],[Material],[REFERENCE],[Codentify] ORDER BY [Task] desc) row_num FROM OrderItems) delete FROM CTE WHERE row_num > 1 and left(ORDTyp,2)='PO'";
     $stmt = $Connection->execute($SQL);
+    $stmt = $Connection->execute($SQL1);
 break;
 
 //***************************************************************************************************//
@@ -417,8 +404,8 @@ case "SWAP_reference":
                             $skipFirstRow = false;
                             continue; 
                         }
-                        $PARCELNO = $row[2];
-                        $PARCELNO_ST = $row[1];
+                        $PARCELNO = floatval($row[2]);
+                        $PARCELNO_ST = floatval($row[1]);
                         $REFERENCE = $row[0];
                         $DT = date("Y-m-d", strtotime(substr($row[5], 6, 4) . '-' . substr($row[5], 3, 2) . '-' . substr($row[5], 0, 2)));                  
                     
@@ -458,22 +445,12 @@ case "Packeta_branch":
 
 }
 
-function Exp_SQL_commands($job,$Export_path = '', $Export_file='')
+function Exp_SQL_commands($job,$Export_path = '', $Export_file = '')
 {
 unset($Connection);
 switch ($job) 
 {
 
-//***************************************************************************************************//
-case "Parcel_Compare":
-    if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");} 
-    $DT = date("Y_m_d");
-    $SQL= "SELECT [REFERENCE],[PickUp_Date],[PARCELNO],[Notice],[Field] FROM [dbo].[CompareDPD_14days_View] Order by [PickUp_Date] desc";
-    $stmt = $Connection->select($SQL);
-    //array($stmt,$DT,"") => $stmt = row data, $DT = file_XXX(Date/Time), "" = array name of columns in number format , "" = array name of columns in date format
-    $array = array($stmt,$DT,"","");
-    return  $array;
-    break;
 //***************************************************************************************************//
 case "Parcel_Compare_14days":
     if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");} 
@@ -481,9 +458,11 @@ case "Parcel_Compare_14days":
     $SQL= "SELECT [REFERENCE],[PickUp_Date],[PARCELNO],[Notice],[Field] FROM [dbo].[CompareDPD_14days_View] Order by [PickUp_Date] desc";
     $stmt = $Connection->select($SQL);
     $Field = array("REFERENCE","PARCELNO");
-    $array = array($stmt,$DT,$Field,"");
+    $Field1 = array("PickUp_Date");
+    $array = array($stmt,$DT,$Field,$Field1);
     return  $array;
     break;
+
 //***************************************************************************************************//
 case "SWAP_14days":
     if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");} 
@@ -491,9 +470,11 @@ case "SWAP_14days":
     $SQL= "SELECT * FROM [dbo].[SWAP_14days_View] ORDER by [Created_Date] asc";
     $stmt = $Connection->select($SQL);
     $Field = array("REFERENCE","Parcel_First","Parcel_Second");
-    $array = array($stmt,$DT,$Field,"");
+    $Field1 = array("Created_Date","PickUp_Date","Delivery_Date","Received_Date");
+    $array = array($stmt,$DT,$Field,$Field1);
     return  $array;
     break;
+
 //***************************************************************************************************//
 case "ParcelShop_14days":
     if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");} 
@@ -501,9 +482,11 @@ case "ParcelShop_14days":
     $SQL= "SELECT [REFERENCE],[PS_Delv_Date],[PARCELNO],[Notice] FROM [dbo].[ParcelShop_14days_View] ORDER by [PS_Delv_Date] asc";
     $stmt = $Connection->select($SQL);
     $Field = array("REFERENCE","PARCELNO");
-    $array = array($stmt,$DT[1],$Field,"");
+    $Field1 = array("PS_Delv_Date");
+    $array = array($stmt,$DT,$Field,$Field1);
     return  $array;
     break;
+
 //***************************************************************************************************//
 case "SWAP_report":
     if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");} 
@@ -511,19 +494,35 @@ case "SWAP_report":
     $SQL= "SELECT * FROM [dbo].[SWAP_report_View] ORDER by [Created_Date] asc";
     $stmt = $Connection->select($SQL);
     $Field = array("REFERENCE","Parcel_First","Parcel_Second");
-    $array = array($stmt,$DT[1],$Field,"");
+    $Field1 = array("Created_Date","PickUp_Date","Delivery_Date","Received_Date");
+    $array = array($stmt,$DT,$Field,$Field1);
     return  $array;
     break;
+
 //***************************************************************************************************//
 case "TradeIN_report":
     if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");} 
     $DT = date("Y_m_d");
-    $SQL= "SELECT [REFERENCE],[Created_Date],[Shipped_Date],[Delivery_Date],[PickUp_Date],[Received_Date],[Parcel_First],[Parcel_Second],[STATUS],[CdfCharger],[CdfHolder],[Final Status] FROM [dbo].[Trade_IN_report_View] ORDER by [Created_Date] asc";
+    $SQL= "SELECT [REFERENCE],[Created_Date],[Delivery_Date],[PickUp_Date],[Received_Date],[Parcel_First],[Parcel_Second],[Status],[CdfCharger],[CdfHolder] FROM [dbo].[Trade_IN_report_View] ORDER by [Created_Date] asc";
     $stmt = $Connection->select($SQL);
     $Field = array("REFERENCE","Parcel_First","Parcel_Second");
-    $array = array($stmt,$DT[1],$Field,"");
+    $Field1 = array("Created_Date","PickUp_Date","Delivery_Date","Received_Date");
+    $array = array($stmt,$DT,$Field,$Field1);
     return  $array;
     break;
+
+//***************************************************************************************************//
+case "TradeIN_D_report":
+    if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");} 
+    $DT = date("Y_m_d");
+    $SQL = "SELECT [Reference],[ParcelNO] as Parcel,[STATUS],[CdfCharger],[CdfHolder],convert(date,[Scantime]) as Date FROM [DPD_DB].[dbo].[TRADE_IN_D] order by date, Reference, ParcelNO";
+    $stmt = $Connection->select($SQL);
+    $Field = array("REFERENCE","Parcel");
+    $Field1 = array("Date");
+    $array = array($stmt,$DT,$Field,$Field1);
+    return  $array;
+    break;
+   
 //***************************************************************************************************//
 case "CSS_scan": 
     if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}  
@@ -536,15 +535,18 @@ case "CSS_scan":
     $array = array($stmt,$DT[1],$Field,$Field1);
     return  $array;
     break;
+
 //***************************************************************************************************//
 case "EAN_export": 
-    if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}  
+    if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}
+    $DT = date("Y_m_d");  
     $SQL= "SELECT [EAN_PK],[EAN_CT],[EAN_BX],[MATNR],[MAKTX] FROM [dbo].[EAN]";
     $stmt = $Connection->select($SQL);
     $Field = array("EAN_PK","EAN_CT","EAN_BX");
     $array = array($stmt,$DT[1],$Field,"");
     return  $array;
     break;
+
 //***************************************************************************************************//
 case "Ecomm_non_del_Export": 
     if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}  
@@ -557,23 +559,25 @@ case "Ecomm_non_del_Export":
     $array = array($stmt,$DT[1],$Field,$Field1);
     return  $array;
     break;
+
 //***************************************************************************************************//
 case "Ecomm_non_DelDvc": 
     if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}  
     $DT=getWorkingDay(date("Y-m-d"));  
-    $SQL= "SELECT *  FROM [dbo].[NonDlv_Dvc_sum_View_export] where SUM = 0 and CONVERT(DATE, scantime)= :DT or  SUM is not null and CONVERT(DATE, scantime)= :DT1 order by Reference,Material";
-    $params = array('DT'=> $DT[0], 'DT1' => $DT[0]);
+    $SQL= "SELECT *  FROM [dbo].[NonDlv_Dvc_sum_View_export] where SUM = 0 and CONVERT(DATE, scantime)= :DT  order by Reference,Material";
+    $params = array('DT'=> $DT[0]);
     $stmt = $Connection->select($SQL,$params);
     $Field = array("Reference","EAN","PARCELNO","ScanQuantity","OrdQuantity","Sum");
     $Field1 = array("Inbound","Scantime");
     $array = array($stmt,$DT[1],$Field,$Field1);
     return  $array;
     break;
+
 //***************************************************************************************************//
 case "Ecomm_non_DelDvc_miss": 
     if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}  
     $DT=getWorkingDay(date("Y-m-d"));  
-    $SQL= "SELECT *  FROM [dbo].[NonDlv_Dvc_sum_View_export] where SUM <> 0 and CONVERT(DATE, scantime)= :DT or  SUM is not null and CONVERT(DATE, scantime)= :DT1 order by Reference,Material";
+    $SQL= "SELECT *  FROM [dbo].[NonDlv_Dvc_sum_View_export] where SUM <> 0 and CONVERT(DATE, scantime)= :DT or  SUM is null and CONVERT(DATE,scantime) = :DT1 order by Reference,Material";
     $params = array('DT'=> $DT[0], 'DT1' => $DT[0]);
     $stmt = $Connection->select($SQL,$params);
     $Field = array("Reference","EAN","ScanQuantity","OrdQuantity","Sum","PARCELNO");
@@ -581,10 +585,24 @@ case "Ecomm_non_DelDvc_miss":
     $array = array($stmt,$DT[1],$Field,$Field1);
     return  $array;
     break;
+
+//***************************************************************************************************//
+case "Ecomm_non_Del_unproc": 
+    if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}  
+    $DT=getWorkingDay(date("Y-m-d"));  
+    $SQL= "SELECT *  FROM [dbo].[NonDlv_Dvc_sum_View_export] where convert(DATE, Inbound) = :DT and  scantime is null and Inbound is not null  order by Reference,Material";
+    $params = array('DT'=> $DT[0]);
+    $stmt = $Connection->select($SQL,$params);
+    $Field = array("Reference","EAN","ScanQuantity","OrdQuantity","Sum","PARCELNO");
+    $Field1 = array("Inbound","Scantime");
+    $array = array($stmt,$DT[1],$Field,$Field1);
+    return  $array;
+    break;
+
 //***************************************************************************************************//
 case "Ecomm_SWAP_del_export": 
     if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}  
-    $DT=getWorkingDay(date("Y-m-d"));  
+    $DT=getWorkingDay(date("Y-m-d"));
     $SQL= "SELECT *  FROM [dbo].[SWAP_Dvc_View_Export] where CONVERT(DATE,EVENT_DATE_TIME) = :DT  order by [EVENT_DATE_TIME]";
     $params = array('DT'=> $DT[0]);
     $stmt = $Connection->select($SQL,$params);
@@ -593,23 +611,25 @@ case "Ecomm_SWAP_del_export":
     $array = array($stmt,$DT[1],$Field,$Field1);
     return  $array;
     break;
+
 //***************************************************************************************************//
 case "Ecomm_SWAP_Dvc": 
     if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}  
     $DT=getWorkingDay(date("Y-m-d"));  
-    $SQL= "SELECT *  FROM [dbo].[SWAP_Dvc_sum_View_export] where SUM = 0 and CONVERT(DATE,scantime) = :DT or  SUM is not null and CONVERT(DATE,scantime) = :DT1 order by Reference,Material";
-    $params = array('DT'=> $DT[0], 'DT1' => $DT[0]);
+    $SQL= "SELECT *  FROM [dbo].[SWAP_Dvc_sum_View_export] where SUM = 0 and CONVERT(DATE,scantime) = :DT order by Reference,Material";
+    $params = array('DT'=> $DT[0]);
     $stmt = $Connection->select($SQL,$params);
     $Field = array("Reference","EAN_PK","SumOrd","SumScan","Sum","PARCELNO" );
     $Field1 = array("Inbound","Scantime");
     $array = array($stmt,$DT[1],$Field,$Field1);
     return  $array;
     break;
+
 //***************************************************************************************************//
 case "Ecomm_SWAP_Dvc_miss": 
     if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}  
     $DT=getWorkingDay(date("Y-m-d"));  
-    $SQL= "SELECT *  FROM [dbo].[SWAP_Dvc_sum_View_export] where SUM <> 0 and CONVERT(DATE,scantime) = :DT or  SUM is not null and CONVERT(DATE,scantime) = :DT1 order by Reference,Material";
+    $SQL= "SELECT *  FROM [dbo].[SWAP_Dvc_sum_View_export] where SUM <> 0 and CONVERT(DATE,scantime) = :DT or  SUM is null and CONVERT(DATE,scantime) = :DT1 order by Reference,Material";
     $params = array('DT'=> $DT[0], 'DT1' => $DT[0]);
     $stmt = $Connection->select($SQL,$params);
     $Field = array("Reference","EAN_PK","SumOrd","SumScan","Sum","PARCELNO" );
@@ -617,6 +637,23 @@ case "Ecomm_SWAP_Dvc_miss":
     $array = array($stmt,$DT[1],$Field,$Field1);
     return  $array;
     break;
+
+//***************************************************************************************************//
+case "Parcel_inbound": 
+    if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");} 
+    $currentDate = date('Y-m-25'); 
+    $yesterdayDate = date('Y-m-d', strtotime($currentDate . ' -1 day'));
+    list($year, $month ,$day) = explode('-', $currentDate);
+    $Start_day = date('Y-m-d', strtotime("{$year}-{$month}-{$day} -1 month"));
+    $SQL = "SELECT * FROM [DPD_DB].[dbo].[Inbound_report_View] WHERE convert(Date, [EVENT_DATE_TIME]) >= :DT AND convert(Date, [EVENT_DATE_TIME]) <= :DT1 order by [EVENT_DATE_TIME] asc";
+    $params = array('DT'=> $Start_day, 'DT1' => $yesterdayDate);
+    $stmt = $Connection->select($SQL,$params);
+    $Field = array("PARCELNO");
+    $Field1 = array("EVENT_DATE_TIME");
+    $array = array($stmt,$yesterdayDate,$Field,$Field1);
+    return  $array;
+    break;
+
 //***************************************************************************************************//
 case "PMX_DSS_Time_export": 
     if (!isset($Connection)){$Connection = new PDOConnect("Produktivita");}  
@@ -624,9 +661,11 @@ case "PMX_DSS_Time_export":
     {  
     $date = new DateTime(date("Y-m-d"));
     $date = $date->sub(new DateInterval('P'.$i.'D'));   
-    $DT=getWorkingDay($date->format("Y-m-d"));  
-    $SQL= "SELECT *  FROM [dbo].[DSSMITH_Time_View] WHERE CONVERT(DATE,[Process Start Date]) = :DT";
-    $params = array('DT'=> $DT[0]);
+    $DT=getWorkingDay($date->format("Y-m-d"));
+    $date = new DateTime($DT[0]);
+    $DTT= $date->format("Ymd");
+    $SQL= "SELECT *  FROM [dbo].[DSSMITH_Time_View] WHERE [Process Start Date] = :DT";
+    $params = array('DT'=> $DTT);
     $stmt = $Connection->execute($SQL,$params);
     $array = array($stmt,$DT[1],"","");
 
@@ -652,10 +691,16 @@ case "PMX_DSS_Time_export":
 
 //***************************************************************************************************//
 case "PMX_DSS_VOL_export": 
-    if (!isset($Connection)){$Connection = new PDOConnect("Produktivita");}  
-    $DT=getWorkingDay(date("Y-m-d"));  
-    $SQL= "SELECT *  FROM [dbo].[DSSMITH_VOL_View] WHERE CONVERT(DATE,[Process Start Date]) = :DT";
-    $params = array('DT'=> $DT[0]);
+    if (!isset($Connection)){$Connection = new PDOConnect("Produktivita");}
+    for ($i = 30; $i >= 0; $i--) 
+    {    
+    $date = new DateTime(date("Y-m-d"));
+    $date = $date->sub(new DateInterval('P'.$i.'D'));   
+    $DT=getWorkingDay($date->format("Y-m-d"));
+    $date = new DateTime($DT[0]);
+    $DTT= $date->format("Ymd");  
+    $SQL= "SELECT *  FROM [dbo].[DSSMITH_VOL_View] WHERE [Process Start Date] = :DT";
+    $params = array('DT'=>$DTT);
     $stmt = $Connection->execute($SQL,$params);
     $array = array($stmt,$DT[1],"","");
 
@@ -676,6 +721,7 @@ case "PMX_DSS_VOL_export":
             $excelExporter->exportToExcel();
             }
         }
+    }
     break;
 }
 }
