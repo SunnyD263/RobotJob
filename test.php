@@ -6,23 +6,23 @@ require $_SESSION['currentDir']."\SQLconn.php";
 require $_SESSION['currentDir']."\job.php";
 require $_SESSION['currentDir']."\send_email.php"; 
 
-// if (!isset($Connection)){$Connection = new PDOConnect("Setup");} 
-// $SQL=  "SELECT TOP 1 * FROM [Setup].[dbo].[RobotJob_View] WHERE [ID] = :ID ORDER BY 'Start_job' ASC";
-// $params = array('ID'=> 23);
-// $stmt = $Connection->select($SQL,$params);
-// $count = $stmt['count'];
-// if($count !== 0)
-//     {
-//     $rows = $stmt['rows']; 
-//     Do_job($rows[0]["ID"],$rows[0]["Job_name"],$rows[0]["Start_job"],$rows[0]["Frequency"],$rows[0]["Frequency_value"],$rows[0]["Import_way"],$rows[0]["Import_file"], 
-//     $rows[0]["Imp_FTP_ID"],$rows[0]["Import_path"], $rows[0]["Export_way"],$rows[0]["Export_file"],$rows[0]["Exp_FTP_ID"],$rows[0]["Export_path"],$rows[0]["Email"],
-//     $rows[0]["Email_To"],$rows[0]["Email_Cc"], $rows[0]["Email_Subject"],$rows[0]["Email_Body"],$rows[0]["Email_Attach"]);
-//     }
+if (!isset($Connection)){$Connection = new PDOConnect("Setup");} 
+$SQL=  "SELECT TOP 1 * FROM [Setup].[dbo].[RobotJob_View] WHERE [ID] = :ID ORDER BY 'Start_job' ASC";
+$params = array('ID'=> 18);
+$stmt = $Connection->select($SQL,$params);
+$count = $stmt['count'];
+if($count !== 0)
+    {
+    $rows = $stmt['rows']; 
+    Do_job($rows[0]["ID"],$rows[0]["Job_name"],$rows[0]["Start_job"],$rows[0]["Frequency"],$rows[0]["Frequency_value"],$rows[0]["Import_way"],$rows[0]["Import_file"], 
+    $rows[0]["Imp_FTP_ID"],$rows[0]["Import_path"], $rows[0]["Export_way"],$rows[0]["Export_file"],$rows[0]["Exp_FTP_ID"],$rows[0]["Export_path"],$rows[0]["Email"],
+    $rows[0]["Email_To"],$rows[0]["Email_Cc"], $rows[0]["Email_Subject"],$rows[0]["Email_Body"],$rows[0]["Email_Attach"]);
+    }
 
-if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");} 
-Paketa_test(1070145590);
-//  if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");} 
-//PPL(44686354117);
+//if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");} 
+//Paketa_test(1070145590);
+// if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");} 
+// PPL(44686356794);
 
 function Paketa_test($value)
 {
@@ -227,7 +227,7 @@ if($count !== 0)
                 } 
             else
                 {
-                for ($i = 34; $i >= 26; $i--) 
+                for ($i = 14; $i >= 1; $i--) 
                     {    
                     $currentDate = date('Y-m-d');
                     $TodayDate = date('Y-m-d', strtotime($currentDate . ' -'. $i - 1 .' day'));    

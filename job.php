@@ -432,10 +432,12 @@ case "DPD_import":
 
 case "PPL_import":
     include('PPL_import.php');
+    PPL_import();
     break;
 
 case "Packeta_import":
     include('Packeta_import.php');
+    Packeta_Import();
     break;
 
 case "Packeta_branch":
@@ -616,7 +618,7 @@ case "Ecomm_SWAP_del_export":
 case "Ecomm_SWAP_Dvc": 
     if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}  
     $DT=getWorkingDay(date("Y-m-d"));  
-    $SQL= "SELECT *  FROM [dbo].[SWAP_Dvc_sum_View_export] where SUM = 0 and CONVERT(DATE,scantime) = :DT order by Reference,Material";
+    $SQL= "SELECT *  FROM [dbo].[SWAP_Dvc_sum_View_export] where CONVERT(DATE,scantime) = :DT order by Reference,Material";
     $params = array('DT'=> $DT[0]);
     $stmt = $Connection->select($SQL,$params);
     $Field = array("Reference","EAN_PK","SumOrd","SumScan","Sum","PARCELNO" );

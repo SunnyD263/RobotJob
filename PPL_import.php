@@ -1,9 +1,14 @@
 <?php
-    set_time_limit(7200);
-    $startTime = microtime(true);
-    $_SESSION["RowHunt"] = 0;
-    $_SESSION["CloseParcel"] = 0;
-    $_SESSION["RowInsert"]=0;
+    session_start();
+
+
+function PPL_import($ParcelNO='')
+{
+set_time_limit(7200);
+$startTime = microtime(true);
+$_SESSION["RowHunt"] = 0;
+$_SESSION["CloseParcel"] = 0;
+$_SESSION["RowInsert"]=0;
 
 if (!isset($Connection)){$Connection = new PDOConnect("Setup");} 
 $SQL=  "SELECT * FROM [Setup].[dbo].[RobotJob_API] WHERE [Company] = :Company ";
@@ -28,38 +33,49 @@ if($count !== 0)
         //connection setting
         if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}
 
-        if ($Format == 'ParcelNo')
+        If ($ParcelNO == '')
             {
-            $SQL=  "SELECT [PARCELNO] FROM [DPD_DB].[dbo].[PD2] where len(PARCELNO) = 11 and [Update] IS null order by EVENT_DATE_TIME desc";
-            $stmt = $Connection->select($SQL);
-            $Counter = $stmt['count'];
-            if($Counter!==0)
+            if ($Format == 'ParcelNo')
                 {
-                $rows = $stmt['rows'];
-                foreach ($rows as $row )
+                $SQL=  "SELECT [PARCELNO] FROM [DPD_DB].[dbo].[PD2] where len(PARCELNO) = 11 and [Update] IS null order by EVENT_DATE_TIME desc";
+                $stmt = $Connection->select($SQL);
+                $Counter = $stmt['count'];
+                if($Counter!==0)
                     {
-                    $ParcelID =$row['PARCELNO'];       
-                    $apiUrl ="https://api.dhl.com/ecs/ppl/myapi2/shipment?Limit=1000&Offset=0&ShipmentNumbers=$ParcelID";
-                    $options = PPL_connect($grant_type,$client_id,$client_secret,$scope,$token);
+                    $rows = $stmt['rows'];
+                    foreach ($rows as $row )
+                        {
+                        $ParcelID =$row['PARCELNO'];       
+                        $apiUrl ="https://api.dhl.com/ecs/ppl/myapi2/shipment?Limit=1000&Offset=0&ShipmentNumbers=$ParcelID";
+                        $options = PPL_conn($grant_type,$client_id,$client_secret,$scope,$token);
+                        $context = stream_context_create($options);
+                        $response= json_decode( file_get_contents($apiUrl, false, $context));
+                        Importer($response,$Format,$Connection, $Service);                
+                        }
+                    }
+                } 
+            else
+                {
+                for ($i = 14; $i >= 1; $i--) 
+                    {    
+                    $currentDate = date('Y-m-d');
+                    $TodayDate = date('Y-m-d', strtotime($currentDate . ' -'. $i - 1 .' day'));    
+                    $yesterdayDate = date('Y-m-d', strtotime($currentDate . ' -'. $i .' day'));
+                    $apiUrl ="https://api.dhl.com/ecs/ppl/myapi2/shipment?Limit=1000&Offset=0&DateFrom=$yesterdayDate&DateTo=$TodayDate";
+                    $options = PPL_conn($grant_type,$client_id,$client_secret,$scope,$token);
                     $context = stream_context_create($options);
                     $response= json_decode( file_get_contents($apiUrl, false, $context));
-                    Import($response,$Format,$Connection, $Service);                
+                    Importer($response,$Format,$Connection,$Service);
                     }
                 }
-            } 
+            }
         else
             {
-            for ($i = 14; $i >= 1; $i--) 
-                {    
-                $currentDate = date('Y-m-d');
-                $TodayDate = date('Y-m-d', strtotime($currentDate . ' -'. $i - 1 .' day'));    
-                $yesterdayDate = date('Y-m-d', strtotime($currentDate . ' -'. $i .' day'));
-                $apiUrl ="https://api.dhl.com/ecs/ppl/myapi2/shipment?Limit=1000&Offset=0&DateFrom=$yesterdayDate&DateTo=$TodayDate";
-                $options = PPL_connect($grant_type,$client_id,$client_secret,$scope,$token);
-                $context = stream_context_create($options);
-                $response= json_decode( file_get_contents($apiUrl, false, $context));
-                Import($response,$Format,$Connection,$Service);
-                }
+            $apiUrl ="https://api.dhl.com/ecs/ppl/myapi2/shipment?Limit=1000&Offset=0&ShipmentNumbers=$ParcelNO";
+            $options = PPL_conn($grant_type,$client_id,$client_secret,$scope,$token);
+            $context = stream_context_create($options);
+            $response= json_decode( file_get_contents($apiUrl, false, $context));
+            Importer($response,$Format,$Connection, $Service);       
             }
         }   
     }
@@ -74,8 +90,9 @@ echo "Insert records: ".$_SESSION["RowInsert"]."<br>";
 unset($_SESSION["RowHunt"]);
 unset($_SESSION["CloseParcel"]);
 unset($_SESSION["RowInsert"]);
+}
 
-function Import($response,$Format,$Connection,$Service)
+function Importer($response,$Format,$Connection,$Service)
     {           
     $_SESSION["RowHunt"]++;
     if ($response !== null) 
@@ -142,7 +159,8 @@ function Import($response,$Format,$Connection,$Service)
             }
         }
     }
-    function PPL_connect($grantType,$clientID,$clientSecret,$scope,$tokenUrl)
+
+    function PPL_conn($grantType,$clientID,$clientSecret,$scope,$tokenUrl)
     {
         
         $PPL = file_get_contents('http://localhost/ppl.txt');

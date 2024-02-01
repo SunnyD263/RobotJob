@@ -1,35 +1,57 @@
 <?php
-set_time_limit(7200);
-$startTime = microtime(true);
-$txt = file_get_contents('http://localhost/proxy.txt');
-$items = explode(';', $txt);
-$parameters = [
-    'proxy_host'     => $items[0],
-    'proxy_port'     => $items[1],
-     'stream_context' => stream_context_create(
-        array(
-            'ssl' => array(
-                'verify_peer'       => false,
-                'verify_peer_name'  => false,
+session_start();
+
+function Parameter()
+    {
+    $txt = file_get_contents('http://localhost/proxy.txt');
+    $items = explode(';', $txt);
+    $parameters = [
+        'proxy_host'     => $items[0],
+        'proxy_port'     => $items[1],
+        'stream_context' => stream_context_create(
+            array(
+                'ssl' => array(
+                    'verify_peer'       => false,
+                    'verify_peer_name'  => false,
+                )
             )
         )
-    )
-];
-$RowHunt = 0;
-$CloseParcel = 0;
-$RowInsert=0;
+    ];
+    return $parameters;
+    }
+
+function Packeta_Import($ParcelNO = '')
+{
+    set_time_limit(7200);
+    $startTime = microtime(true);
+    $RowHunt = 0;
+    $CloseParcel = 0;
+    $RowInsert=0;
 try 
 {   
 
     //connection setting
-    if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");} // zavolání funkce a předání hodnot jako argumenty
+    if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}     // zavolání funkce a předání hodnot jako argumenty
+    $parameters = Parameter();
     $client = new SoapClient("./soap.wsdl",$parameters); // initialize the client
     $pw = base64_decode(file_get_contents('http://localhost/packeta.txt'));
-
-    //select packeta parcelnumbers 
-    $SQL=  "SELECT [PARCELNO] FROM [DPD_DB].[dbo].[PD2] where len(PARCELNO) = 10 and [Update] IS null order by EVENT_DATE_TIME desc";
-    $stmt = $Connection->select($SQL);
-    $rows = $stmt['rows']; 
+    ;
+    if ($ParcelNO == '')
+        {
+        //select packeta parcelnumbers 
+        $SQL=  "SELECT [PARCELNO] FROM [DPD_DB].[dbo].[PD2] where len(PARCELNO) = 10 and [Update] IS null order by EVENT_DATE_TIME desc";
+        $stmt = $Connection->select($SQL);
+        $count =$stmt["count"];
+        if ($count !== 0)
+            {
+            $rows = $stmt['rows']; 
+            }
+        }
+    else
+        {
+        $rows = [];
+        $rows[0]["PARCELNO"] = $ParcelNO;   
+        }
     //checking new status 
     foreach ($rows as $key => $value)
         {
@@ -152,4 +174,6 @@ echo "Updated parcels: ".$RowHunt."<br>";
 echo "Open parcels: ".$RowHunt-$CloseParcel."<br>";
 echo "Closed parcels: ".$CloseParcel."<br>";
 echo "Insert records: ".$RowInsert."<br>";
+}
+
 ?>
