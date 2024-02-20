@@ -1195,7 +1195,6 @@ class PHPMailer
 
             return true;
         }
-
         return false;
     }
 

@@ -527,14 +527,29 @@ case "TradeIN_D_report":
    
 //***************************************************************************************************//
 case "CSS_scan": 
-    if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}  
-    $DT=getWorkingDay(date("Y-m-d"));  
+    if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}
+    $DT = date('Y-m-d', strtotime(date("Y-m-d") . ' -1 day'));  
     $SQL= "SELECT *  FROM [dbo].[Direct_View] WHERE CONVERT(DATE, [DT]) = :DT";
-    $params = array('DT'=> $DT[0]);
+    $params = array('DT'=> $DT);
     $stmt = $Connection->select($SQL,$params);
     $Field = array("EAN","Parcel","Quantity");
     $Field1 = array("DT");
-    $array = array($stmt,$DT[1],$Field,$Field1);
+    $DT2= date('Y_m_d', strtotime(date("Y-m-d") . ' -1 day'));
+    $array = array($stmt,$DT2,$Field,$Field1);
+    return  $array;
+    break;
+
+//***************************************************************************************************//
+case "NCI_Scan": 
+    if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}
+    $DT = date('Y-m-d', strtotime(date("Y-m-d") . ' -1 day'));  
+    $SQL= "SELECT *  FROM [dbo].[DirectNCI_View] WHERE CONVERT(DATE, [DT]) = :DT";
+    $params = array('DT'=> $DT);
+    $stmt = $Connection->select($SQL,$params);
+    $Field = array("EAN","Parcel","Quantity");
+    $Field1 = array("DT");
+    $DT2= date('Y_m_d', strtotime(date("Y-m-d") . ' -1 day'));
+    $array = array($stmt,$DT2,$Field,$Field1);
     return  $array;
     break;
 
@@ -632,6 +647,45 @@ case "Ecomm_SWAP_Dvc_miss":
     if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}  
     $DT=getWorkingDay(date("Y-m-d"));  
     $SQL= "SELECT *  FROM [dbo].[SWAP_Dvc_sum_View_export] where SUM <> 0 and CONVERT(DATE,scantime) = :DT or  SUM is null and CONVERT(DATE,scantime) = :DT1 order by Reference,Material";
+    $params = array('DT'=> $DT[0], 'DT1' => $DT[0]);
+    $stmt = $Connection->select($SQL,$params);
+    $Field = array("Reference","EAN_PK","SumOrd","SumScan","Sum","PARCELNO" );
+    $Field1 = array("Inbound","Scantime");
+    $array = array($stmt,$DT[1],$Field,$Field1);
+    return  $array;
+    break;
+
+//***************************************************************************************************//
+case "Ecomm_TRADEIN_del_export": 
+    if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}  
+    $DT=getWorkingDay(date("Y-m-d"));
+    $SQL= "SELECT *  FROM [dbo].[TRADEIN_Dvc_View_Export] where CONVERT(DATE,EVENT_DATE_TIME) = :DT  order by [EVENT_DATE_TIME]";
+    $params = array('DT'=> $DT[0]);
+    $stmt = $Connection->select($SQL,$params);
+    $Field = array("REFERENCE","PARCELNO_ST","PARCELNO");
+    $Field1 = array("EVENT_DATE_TIME");
+    $array = array($stmt,$DT[1],$Field,$Field1);
+    return  $array;
+    break;
+
+//***************************************************************************************************//
+case "Ecomm_TRADEIN_Dvc": 
+    if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}  
+    $DT=getWorkingDay(date("Y-m-d"));  
+    $SQL= "SELECT *  FROM [dbo].[TRADEIN_Dvc_sum_View_export] where CONVERT(DATE,scantime) = :DT order by Reference,Material";
+    $params = array('DT'=> $DT[0]);
+    $stmt = $Connection->select($SQL,$params);
+    $Field = array("Reference","EAN_PK","SumOrd","SumScan","Sum","PARCELNO" );
+    $Field1 = array("Inbound","Scantime");
+    $array = array($stmt,$DT[1],$Field,$Field1);
+    return  $array;
+    break;
+
+//***************************************************************************************************//
+case "Ecomm_TRADEIN_Dvc_miss": 
+    if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");}  
+    $DT=getWorkingDay(date("Y-m-d"));  
+    $SQL= "SELECT *  FROM [dbo].[TRADEIN_Dvc_sum_View_export] where SUM <> 0 and CONVERT(DATE,scantime) = :DT or  SUM is null and CONVERT(DATE,scantime) = :DT1 order by Reference,Material";
     $params = array('DT'=> $DT[0], 'DT1' => $DT[0]);
     $stmt = $Connection->select($SQL,$params);
     $Field = array("Reference","EAN_PK","SumOrd","SumScan","Sum","PARCELNO" );

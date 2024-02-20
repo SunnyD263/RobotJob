@@ -56,7 +56,7 @@ if($count !== 0)
                 } 
             else
                 {
-                for ($i = 14; $i >= 1; $i--) 
+                for ($i = 10; $i >= 1; $i--) 
                     {    
                     $currentDate = date('Y-m-d');
                     $TodayDate = date('Y-m-d', strtotime($currentDate . ' -'. $i - 1 .' day'));    
@@ -118,7 +118,7 @@ function Importer($response,$Format,$Connection,$Service)
                 {
                 $Reference ="";
                 }
-
+                
             foreach($TaT as $event)
                 {
                     $ScanCode = $event->statusId;
@@ -147,7 +147,7 @@ function Importer($response,$Format,$Connection,$Service)
                         $_SESSION["RowInsert"]++;
                         } 
                     
-                    If ($Format == 'ParcelNo' and $ScanCode  == 450 or $Format == 'ParcelNo' and $ScanCode  == 453)
+                    If ($Format == 'ParcelNo' and $ScanCode  == 450 or $Format == 'ParcelNo' and $ScanCode  == 453 or $Format == 'ParcelNo' and $ScanCode  == 999)
                         {
                             $SQL=  "UPDATE [dbo].[PD2] SET [Update] = 1 where ([PARCELNO] = :PARCELNO)";
                             $params = array(':PARCELNO' => $ParcelID);  
