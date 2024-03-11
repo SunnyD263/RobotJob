@@ -505,9 +505,9 @@ case "SWAP_report":
 case "TradeIN_report":
     if (!isset($Connection)){$Connection = new PDOConnect("DPD_DB");} 
     $DT = date("Y_m_d");
-    $SQL= "SELECT [REFERENCE],[Created_Date],[Delivery_Date],[PickUp_Date],[Received_Date],[Parcel_First],[Parcel_Second],[Status],[CdfCharger],[CdfHolder] FROM [dbo].[Trade_IN_report_View] ORDER by [Created_Date] asc";
+    $SQL= "SELECT *  FROM [DPD_DB].[dbo].[Trade_IN_report_View] ORDER by [Created_Date] asc";
     $stmt = $Connection->select($SQL);
-    $Field = array("REFERENCE","Parcel_First","Parcel_Second");
+    $Field = array("REFERENCE","Parcel_First","Parcel_Second","SumOrd","SumScan","Sum");
     $Field1 = array("Created_Date","PickUp_Date","Delivery_Date","Received_Date");
     $array = array($stmt,$DT,$Field,$Field1);
     return  $array;

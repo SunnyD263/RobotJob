@@ -74,6 +74,15 @@ switch ($Export_way)
                         // Name of columns export in number format as array
                         $excelExporter->exportToExcel($stmt[2],$stmt[3]);
                         }
+                    else
+                        {
+                        if(unlink($Export_path.$Export_file))
+                            {
+                            $excelExporter = new ExcelExporter($stmt[0]["rows"], $Export_path.$Export_file);
+                            // Name of columns export in number format as array
+                            $excelExporter->exportToExcel($stmt[2],$stmt[3]);
+                            }
+                        }
                     }
                 else
                     {
@@ -106,7 +115,7 @@ switch ($Export_way)
         }
         break;
     }
- if(!isset($Counter)){$Counter = 1;}
+if(!isset($Counter)){$Counter = 1;}
 if ($Counter !== 0)
     {
     //emails sender
